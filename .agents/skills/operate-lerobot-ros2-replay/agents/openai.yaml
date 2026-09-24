@@ -1,4 +1,4 @@
 interface:
   display_name: "LeRobot ROS 2 Replay"
-  short_description: "构建、运行并排查 LeRobot ROS 2 回放与推理链路"
-  default_prompt: "使用 $operate-lerobot-ros2-replay 检查并运行本项目的 ROS 2 数据回放与 OpenPI 推理流程。"
+  short_description: "构建、可视化并排查 LeRobot ROS 2 回放与推理链路"
+  default_prompt: "使用 $operate-lerobot-ros2-replay 检查并运行本项目的 ROS 2 数据回放、OpenPI 推理与 Rerun 可视化流程。"

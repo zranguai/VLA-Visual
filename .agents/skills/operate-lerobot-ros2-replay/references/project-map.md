@@ -6,10 +6,12 @@
 - 接口包：`src/interface/arm_interfaces/`、`src/interface/custom_image_msg/`
 - 推理客户端：`inference/pi05_inference/lite_inference_openpi_temporal_smoothing_hil.py`
 - OpenPI 客户端：`inference/pi05_inference/openpi_client/`
+- Rerun 可视化：`frontend/`，默认配置为 `frontend/config/visualizer.yaml`
 - 默认配置：`src/lerobot_ros2_replay/config/replay.yaml`
 - 操作文档：`scripts/README.md`
 - 默认样例：`/home/zme/datasets/lerobot_test/episode_2026-09-11_10-46-33`
 - 推理虚拟环境：`.venv/inference/`，Python 3.10，继承系统 ROS 2 包。
+- 可视化虚拟环境：`.venv/visualization/`，Python 3.10，固定 Rerun 0.26.2。
 
 ## 数据布局
 
@@ -39,7 +41,9 @@ LeRobot episode 必须是 v3.0，视频后端使用 `pyav`。ROS/推理使用的
 ```bash
 scripts/build_lerobot_ros2_replay.sh
 scripts/setup_inference_env.sh
+scripts/setup_visualization_env.sh
 scripts/run_replay.sh
+scripts/run_visualization.sh
 scripts/run_inference_replay.sh --host 127.0.0.1 --port 7979 --task "<task>"
 ```
 
@@ -73,3 +77,5 @@ export PYTHONDONTWRITEBYTECODE=1
 3. `No module named msgpack/websockets`：运行 `scripts/setup_inference_env.sh`。
 4. 推理动作话题不存在：确认策略服务已返回结果；数据集真值话题与预测话题不是同一话题。
 5. 图像偶发丢帧：相机使用 Best Effort 且单帧接近 1 MB，命令行打印过慢时丢帧可能是预期行为。
+6. Rerun 无法导入或版本不匹配：重新运行 `scripts/setup_visualization_env.sh`。
+7. 模型曲线为空：确认推理脚本已经向 `/execute_arm_cmd_inference_dummy` 发布；其他可视化不依赖该话题。

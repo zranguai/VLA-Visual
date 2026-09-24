@@ -12,9 +12,11 @@ cd /home/zme/vla-2026/VLA-Review
 | --- | --- |
 | `scripts/build_lerobot_ros2_replay.sh` | 构建两个接口包和回放节点 |
 | `scripts/setup_inference_env.sh` | 创建 `.venv/inference` 并安装推理客户端依赖 |
+| `scripts/setup_visualization_env.sh` | 创建 `.venv/visualization` 并安装 Rerun 0.26.2 |
 | `scripts/setup_ros2_replay_env.sh` | 为当前终端加载 ROS 2、工作区和 Domain 100 |
 | `scripts/run_replay.sh` | 读取数据集并发布状态、动作真值和三路相机 |
 | `scripts/run_inference_replay.sh` | 接收回放观测、连接策略服务并发布推理动作 |
+| `scripts/run_visualization.sh` | 只读订阅回放/推理话题并启动 Rerun Viewer |
 
 ## 首次初始化
 
@@ -28,6 +30,13 @@ scripts/build_lerobot_ros2_replay.sh
 
 ```bash
 scripts/setup_inference_env.sh
+```
+
+创建独立的可视化环境。该环境位于 `.venv/visualization`，使用 Python 3.10 和
+`rerun-sdk==0.26.2`：
+
+```bash
+scripts/setup_visualization_env.sh
 ```
 
 ## 运行流程
@@ -53,7 +62,22 @@ scripts/run_inference_replay.sh \
   --task "stir-fry chili with meat."
 ```
 
-终端 3：查看话题。环境脚本必须使用 `source`，否则环境变量不能保留在当前终端。
+终端 3：启动 Rerun 实时可视化。推理未启动时，三路相机、state 和数据集 action
+仍会正常显示：
+
+```bash
+scripts/run_visualization.sh
+```
+
+默认配置位于 `frontend/config/visualizer.yaml`。相机、关节和曲线来源可在配置中
+限制；运行后可通过 Rerun 的相机/关节标签页及 Blueprint 眼睛按钮即时切换。
+无界面记录可用于测试或离线查看：
+
+```bash
+scripts/run_visualization.sh --save /tmp/lerobot-replay.rrd
+```
+
+另一个终端查看话题。环境脚本必须使用 `source`，否则环境变量不能保留在当前终端。
 
 ```bash
 source scripts/setup_ros2_replay_env.sh
@@ -89,4 +113,11 @@ ros2 topic info -v /execute_arm_cmd_dummy
 
 出现 `Could not determine the type` 时，通常是当前终端没有加载 `install/setup.bash`；上述环境脚本会完成加载。出现 `No module named msgpack` 或 `websockets` 时，重新运行 `scripts/setup_inference_env.sh`。
 
-可通过以下环境变量覆盖默认路径：`PYTHON_BIN`、`INFERENCE_VENV`、`OPENPI_CLIENT_SRC`、`UV_BIN`。`openpi_client` 默认读取 `inference/pi05_inference/openpi_client`。
+出现 `No module named rerun` 或 Rerun 版本不正确时，重新运行
+`scripts/setup_visualization_env.sh`。三路相机默认在可视化端降采样到 10 Hz 并以
+JPEG quality 85 保存，ROS 2 原话题和推理频率不会被修改。
+
+可通过以下环境变量覆盖默认路径：`PYTHON_BIN`、`INFERENCE_VENV`、
+`OPENPI_CLIENT_SRC`、`VISUALIZATION_VENV`、`VISUALIZATION_PYTHON_BIN`、
+`VISUALIZATION_CONFIG`、`UV_BIN`。`openpi_client` 默认读取
+`inference/pi05_inference/openpi_client`。
