@@ -1,7 +1,7 @@
 ros_domain_id: 100
 
 dataset:
-  root: /home/zme/datasets/lerobot_test/episode_2026-09-11_10-46-33
+  root: /home/zme/datasets/lerobot_test/episode_2026-09-20_19-03-02
   episode_index: 0
   video_backend: pyav
 
