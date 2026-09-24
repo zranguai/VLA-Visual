@@ -1,0 +1,36 @@
+ros_domain_id: 100
+
+dataset:
+  root: /home/zme/datasets/lerobot_test/episode_2026-09-11_10-46-33
+  episode_index: 0
+  video_backend: pyav
+
+playback:
+  speed: 1.0
+  loop: false
+  start_frame: 0
+  end_frame: null
+
+topics:
+  arm_status:
+    name: /arm_status
+    hz: 30.0
+  action:
+    name: /execute_arm_cmd_dummy
+    hz: 30.0
+  cameras:
+    top:
+      feature_key: observation.images.top
+      name: /camera_dcw2/custom_cam_color_1M
+      frame_id: camera_dcw2
+      hz: 30.0
+    left:
+      feature_key: observation.images.left_wrist
+      name: /camera_dcl_left/custom_cam_color_1M
+      frame_id: camera_dcl_left
+      hz: 30.0
+    right:
+      feature_key: observation.images.right_wrist
+      name: /camera_dcl_right/custom_cam_color_1M
+      frame_id: camera_dcl_right
+      hz: 30.0

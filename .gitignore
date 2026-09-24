@@ -1,0 +1,18 @@
+# Local Python environments
+.venv/
+
+# ROS 2 / colcon build outputs
+build/
+install/
+log/
+CMakeFiles/
+
+# Python caches and test artifacts
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Runtime logs
+*.log

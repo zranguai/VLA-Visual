@@ -1,0 +1,2 @@
+builtin_interfaces/Time stamp
+custom_image_msg/String frame_id
