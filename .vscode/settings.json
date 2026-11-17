@@ -1,0 +1,22 @@
+{
+    "python.autoComplete.extraPaths": [
+        "/home/zme/vla-2026/VLA-Review/build/lerobot_ros2_replay",
+        "/home/zme/vla-2026/VLA-Review/install/lerobot_ros2_replay/lib/python3.10/site-packages",
+        "/home/zme/vla-2026/VLA-Review/build/eval_model",
+        "/home/zme/vla-2026/VLA-Review/install/eval_model/lib/python3.10/site-packages",
+        "/home/zme/vla-2026/VLA-Review/install/custom_image_msg/local/lib/python3.10/dist-packages",
+        "/home/zme/vla-2026/VLA-Review/install/arm_interfaces/local/lib/python3.10/dist-packages",
+        "/opt/ros/humble/lib/python3.10/site-packages",
+        "/opt/ros/humble/local/lib/python3.10/dist-packages"
+    ],
+    "python.analysis.extraPaths": [
+        "/home/zme/vla-2026/VLA-Review/build/lerobot_ros2_replay",
+        "/home/zme/vla-2026/VLA-Review/install/lerobot_ros2_replay/lib/python3.10/site-packages",
+        "/home/zme/vla-2026/VLA-Review/build/eval_model",
+        "/home/zme/vla-2026/VLA-Review/install/eval_model/lib/python3.10/site-packages",
+        "/home/zme/vla-2026/VLA-Review/install/custom_image_msg/local/lib/python3.10/dist-packages",
+        "/home/zme/vla-2026/VLA-Review/install/arm_interfaces/local/lib/python3.10/dist-packages",
+        "/opt/ros/humble/lib/python3.10/site-packages",
+        "/opt/ros/humble/local/lib/python3.10/dist-packages"
+    ]
+}

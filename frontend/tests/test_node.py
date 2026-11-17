@@ -10,9 +10,23 @@ CONFIG_PATH = Path(__file__).resolve().parents[1] / "config" / "visualizer.yaml"
 
 
 def test_cli_supports_headless_recording():
-    args = _parse_cli(["--config", str(CONFIG_PATH), "--save", "/tmp/test.rrd"])
+    args = _parse_cli(
+        [
+            "--config",
+            str(CONFIG_PATH),
+            "--save",
+            "/tmp/test.rrd",
+            "--eval-config",
+            "/tmp/eval.yaml",
+            "--replay-config",
+            "/tmp/replay.yaml",
+            "--eval-run-label",
+            "checkpoint-10",
+        ]
+    )
     assert args.config == str(CONFIG_PATH)
     assert args.save == "/tmp/test.rrd"
+    assert args.eval_run_label == "checkpoint-10"
 
 
 def test_domain_conflict_is_rejected(monkeypatch):

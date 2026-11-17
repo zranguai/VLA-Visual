@@ -1,0 +1,23 @@
+ros_domain_id: 100
+
+topics:
+  reference: /execute_arm_cmd_dummy
+  prediction: /execute_arm_cmd_inference_dummy
+
+alignment:
+  max_interpolation_gap_ms: 100.0
+  lag_search_ms: 500.0
+  resample_hz: 30.0
+
+metrics:
+  gripper_threshold: 50.0
+  event_tolerances_ms: [100.0, 250.0, 500.0]
+  motion_quantiles: [0.5, 0.9]
+  min_samples: 30
+  rolling_window_s: 1.0
+
+report:
+  output_root: outputs/eval_model
+  idle_timeout_s: 5.0
+  status_interval_s: 5.0
+  evaluation_mode: diagnostic

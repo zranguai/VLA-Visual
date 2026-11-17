@@ -12,17 +12,24 @@ import rclpy
 import rerun as rr
 from arm_interfaces.msg import ArmStatus, AutonomyArmCommand
 from custom_image_msg.msg import Image1m
+from eval_model.config import load_config as load_evaluation_config
+from eval_model.metadata import load_dataset_metadata
 from rclpy.node import Node
 from rclpy.qos import DurabilityPolicy, HistoryPolicy, QoSProfile, ReliabilityPolicy
 from rclpy.utilities import remove_ros_args
 
 from .blueprint import build_blueprint, camera_entity_path, log_series_styles, signal_entity_path
-from .config import VisualizationConfig, load_config
+from .config import SIGNAL_NAMES, VisualizationConfig, load_config
 from .converters import RateGate, decode_image1m, extract_action, extract_state, message_timestamp_ns
+from .evaluation import RerunEvaluationBridge
 
 
 class RerunVisualizerNode(Node):
-    def __init__(self, config: VisualizationConfig) -> None:
+    def __init__(
+        self,
+        config: VisualizationConfig,
+        evaluation: RerunEvaluationBridge | None = None,
+    ) -> None:
         super().__init__(
             "lerobot_ros2_visualizer",
             enable_rosout=False,
@@ -33,6 +40,7 @@ class RerunVisualizerNode(Node):
         self._parameter_event_publisher = None
         self.destroy_publisher(parameter_event_publisher)
         self.config = config
+        self.evaluation = evaluation
         self._warning_times: dict[str, float] = {}
         self._topic_subscriptions: list[Any] = []
         self._camera_gates = {
@@ -69,7 +77,7 @@ class RerunVisualizerNode(Node):
             ("model_action", config.topics.model_action),
         )
         for source, topic in action_sources:
-            if source in config.signals.sources:
+            if source in config.signals.sources or evaluation is not None:
                 self._topic_subscriptions.append(
                     self.create_subscription(
                         AutonomyArmCommand,
@@ -87,6 +95,9 @@ class RerunVisualizerNode(Node):
                     camera_qos,
                 )
             )
+        self._evaluation_timer = (
+            self.create_timer(0.5, self._check_evaluation) if evaluation is not None else None
+        )
 
         sources = ", ".join(config.signals.sources)
         cameras = ", ".join(config.cameras.enabled)
@@ -125,9 +136,26 @@ class RerunVisualizerNode(Node):
 
     def _action_callback(self, source: str) -> Callable[[AutonomyArmCommand], None]:
         def callback(msg: AutonomyArmCommand) -> None:
-            self._log_signals(msg, source, extract_action)
+            try:
+                values = extract_action(msg)
+            except ValueError as exc:
+                self._warn_limited(source, f"Dropped invalid {source} message: {exc}")
+                return
+            timestamp_ns = self._timestamp_ns(msg)
+            if source in self.config.signals.sources:
+                self._set_time(timestamp_ns)
+                for signal in self.config.signals.enabled:
+                    rr.log(signal_entity_path(signal, source), rr.Scalars(values[signal]))
+            if self.evaluation is not None:
+                vector = np.asarray([values[name] for name in SIGNAL_NAMES], dtype=np.float64)
+                self.evaluation.add_action(source, timestamp_ns, vector)
 
         return callback
+
+    def _check_evaluation(self) -> None:
+        if self.evaluation is not None and self.evaluation.idle_timeout_reached():
+            path = self.evaluation.finalize()
+            self.get_logger().info(f"Evaluation report written: {path}")
 
     def _image_callback(self, role: str) -> Callable[[Image1m], None]:
         def callback(msg: Image1m) -> None:
@@ -156,6 +184,11 @@ def _parse_cli(argv: list[str]) -> argparse.Namespace:
         metavar="PATH",
         help="Write a headless Rerun .rrd recording instead of spawning the Viewer",
     )
+    parser.add_argument("--no-evaluation", action="store_true", help="Disable action evaluation")
+    parser.add_argument("--eval-config", help="Action evaluation YAML configuration")
+    parser.add_argument("--replay-config", help="Replay YAML used to locate dataset metadata")
+    parser.add_argument("--eval-output-dir", help="Exact evaluation report directory")
+    parser.add_argument("--eval-run-label", default="model", help="Model/checkpoint label")
     return parser.parse_args(remove_ros_args(args=[sys.argv[0], *argv])[1:])
 
 
@@ -174,8 +207,12 @@ def _configure_domain(config: VisualizationConfig) -> None:
     os.environ["ROS_DOMAIN_ID"] = str(config.ros_domain_id)
 
 
-def _initialize_rerun(config: VisualizationConfig, save_path: str | None) -> None:
-    blueprint = build_blueprint(config)
+def _initialize_rerun(
+    config: VisualizationConfig,
+    save_path: str | None,
+    evaluation_enabled: bool,
+) -> None:
+    blueprint = build_blueprint(config, evaluation_enabled=evaluation_enabled)
     rr.init(
         config.viewer.application_id,
         spawn=False,
@@ -191,23 +228,59 @@ def _initialize_rerun(config: VisualizationConfig, save_path: str | None) -> Non
             hide_welcome_screen=True,
             default_blueprint=blueprint,
         )
-    log_series_styles(config)
+    log_series_styles(config, evaluation_enabled=evaluation_enabled)
 
 
 def main(args: list[str] | None = None) -> None:
     cli = _parse_cli(sys.argv[1:] if args is None else args)
     config = load_config(cli.config)
+    evaluation_config = None
+    evaluation_metadata = None
+    if not cli.no_evaluation:
+        if not cli.eval_config or not cli.replay_config:
+            raise RuntimeError(
+                "evaluation requires both --eval-config and --replay-config; "
+                "use --no-evaluation to disable it"
+            )
+        evaluation_config = load_evaluation_config(cli.eval_config)
+        evaluation_metadata = load_dataset_metadata(cli.replay_config)
+        if evaluation_config.ros_domain_id != config.ros_domain_id:
+            raise RuntimeError("visualizer and evaluator ROS domains must match")
+        if evaluation_config.topics.reference != config.topics.dataset_action:
+            raise RuntimeError("evaluation reference topic must match visualizer dataset action")
+        if evaluation_config.topics.prediction != config.topics.model_action:
+            raise RuntimeError("evaluation prediction topic must match visualizer model action")
     _configure_domain(config)
-    _initialize_rerun(config, cli.save)
+    _initialize_rerun(config, cli.save, evaluation_enabled=evaluation_config is not None)
+
+    evaluation = None
+    if evaluation_config is not None and evaluation_metadata is not None:
+        output_directory = (
+            Path(cli.eval_output_dir).expanduser().resolve()
+            if cli.eval_output_dir
+            else None
+        )
+        evaluation = RerunEvaluationBridge(
+            evaluation_config,
+            evaluation_metadata,
+            config.viewer.timeline,
+            cli.eval_run_label,
+            output_directory,
+        )
 
     rclpy.init(args=[])
     node: RerunVisualizerNode | None = None
     try:
-        node = RerunVisualizerNode(config)
+        node = RerunVisualizerNode(config, evaluation=evaluation)
         rclpy.spin(node)
     except KeyboardInterrupt:
         pass
     finally:
+        if evaluation is not None:
+            report_was_written = evaluation.finalized
+            report_path = evaluation.finalize()
+            if node is not None and not report_was_written:
+                node.get_logger().info(f"Evaluation report written: {report_path}")
         if node is not None:
             node.destroy_node()
         if rclpy.ok():

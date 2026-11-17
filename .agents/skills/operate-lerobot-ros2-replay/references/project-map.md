@@ -3,6 +3,7 @@
 ## 路径
 
 - 回放包：`src/lerobot_ros2_replay/`
+- 评估包：`src/eval_model/`，默认配置为 `src/eval_model/config/eval_model.yaml`
 - 接口包：`src/interface/arm_interfaces/`、`src/interface/custom_image_msg/`
 - 推理客户端：`inference/pi05_inference/lite_inference_openpi_temporal_smoothing_hil.py`
 - OpenPI 客户端：`inference/pi05_inference/openpi_client/`
@@ -44,6 +45,7 @@ scripts/setup_inference_env.sh
 scripts/setup_visualization_env.sh
 scripts/run_replay.sh
 scripts/run_visualization.sh
+scripts/run_model_eval.sh
 scripts/run_inference_replay.sh --host 127.0.0.1 --port 7979 --task "<task>"
 ```
 
@@ -79,3 +81,5 @@ export PYTHONDONTWRITEBYTECODE=1
 5. 图像偶发丢帧：相机使用 Best Effort 且单帧接近 1 MB，命令行打印过慢时丢帧可能是预期行为。
 6. Rerun 无法导入或版本不匹配：重新运行 `scripts/setup_visualization_env.sh`。
 7. 模型曲线为空：确认推理脚本已经向 `/execute_arm_cmd_inference_dummy` 发布；其他可视化不依赖该话题。
+8. 评估报告为 `insufficient_data`：确认模型话题存在、时间戳与回放时钟一致，并达到配置的最小匹配样本数。
+9. 报告提示不可用于排名：当前为 `diagnostic` 或训练 split；改用 held-out episode 后再做模型结论。

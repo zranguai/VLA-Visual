@@ -8,7 +8,7 @@ source /opt/ros/humble/setup.bash
 cd "${REPO_ROOT}"
 CMAKE_PREFIX_PATH=/opt/ros/humble PATH=/usr/bin:/bin \
   colcon build --symlink-install --cmake-clean-cache \
-  --packages-select arm_interfaces custom_image_msg lerobot_ros2_replay \
+  --packages-select arm_interfaces custom_image_msg lerobot_ros2_replay eval_model \
   --cmake-args \
     -DPython3_EXECUTABLE=/usr/bin/python3 \
     -DPYTHON_EXECUTABLE=/usr/bin/python3 \

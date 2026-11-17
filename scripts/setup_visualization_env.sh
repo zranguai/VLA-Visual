@@ -34,6 +34,6 @@ fi
 source /opt/ros/humble/setup.bash
 source "${REPO_ROOT}/install/setup.bash"
 "${VENV_DIR}/bin/python" -c \
-  'import rclpy, rerun; from arm_interfaces.msg import ArmStatus; from custom_image_msg.msg import Image1m; assert rerun.__version__ == "0.26.2"; print("Rerun 可视化环境验证通过")'
+  'import eval_model, rclpy, rerun; from arm_interfaces.msg import ArmStatus; from custom_image_msg.msg import Image1m; assert rerun.__version__ == "0.26.2"; print("Rerun 可视化与评估环境验证通过")'
 
 echo "环境位置：${VENV_DIR}"

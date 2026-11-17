@@ -17,6 +17,7 @@ cd /home/zme/vla-2026/VLA-Review
 | `scripts/run_replay.sh` | 读取数据集并发布状态、动作真值和三路相机 |
 | `scripts/run_inference_replay.sh` | 接收回放观测、连接策略服务并发布推理动作 |
 | `scripts/run_visualization.sh` | 只读订阅回放/推理话题并启动 Rerun Viewer |
+| `scripts/run_model_eval.sh` | 比较数据集与模型动作并输出 JSON/CSV 评估报告 |
 
 ## 首次初始化
 
@@ -71,11 +72,31 @@ scripts/run_visualization.sh
 
 默认配置位于 `frontend/config/visualizer.yaml`。相机、关节和曲线来源可在配置中
 限制；运行后可通过 Rerun 的相机/关节标签页及 Blueprint 眼睛按钮即时切换。
+可视化默认同时启用动作评估，在 `Evaluation` 标签页显示实时归一化误差，并在
+`outputs/eval_model/` 写入 `summary.json` 和 `aligned_samples.csv`。模型标识可通过
+`MODEL_EVAL_RUN_LABEL` 设置：
+
+```bash
+MODEL_EVAL_RUN_LABEL=pi05-checkpoint-10000 scripts/run_visualization.sh
+```
+
+仅查看画面、不生成评估报告时使用 `scripts/run_visualization.sh --no-evaluation`。
 无界面记录可用于测试或离线查看：
 
 ```bash
 scripts/run_visualization.sh --save /tmp/lerobot-replay.rrd
 ```
+
+终端 4（可选）：不启动 Rerun，独立生成可批处理的评估报告。不要与已启用评估的
+可视化进程同时用于同一个 run label，以免产生两份报告。
+
+```bash
+MODEL_EVAL_RUN_LABEL=pi05-checkpoint-10000 scripts/run_model_eval.sh
+```
+
+默认评估配置为 `src/eval_model/config/eval_model.yaml`。当前配置使用
+`diagnostic` 模式；训练 episode 的结果只用于链路排障，正式比较模型时必须换用
+未参与训练的多个 episode，并将 `report.evaluation_mode` 设置为 `held_out`。
 
 另一个终端查看话题。环境脚本必须使用 `source`，否则环境变量不能保留在当前终端。
 
@@ -121,3 +142,6 @@ JPEG quality 85 保存，ROS 2 原话题和推理频率不会被修改。
 `OPENPI_CLIENT_SRC`、`VISUALIZATION_VENV`、`VISUALIZATION_PYTHON_BIN`、
 `VISUALIZATION_CONFIG`、`UV_BIN`。`openpi_client` 默认读取
 `inference/pi05_inference/openpi_client`。
+
+评估相关路径还可通过 `MODEL_EVAL_CONFIG`、`MODEL_EVAL_RUN_LABEL` 和
+`REPLAY_CONFIG` 覆盖。
